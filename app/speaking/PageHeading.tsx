@@ -1,0 +1,23 @@
+import Link from "next/link";
+
+export default function PageHeading({ title, description, crumbs }: { title: string; description: string; crumbs?: { label: string; href?: string }[] }) {
+  return (
+    <div className="bg-surface">
+      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+        {crumbs && (
+          <nav aria-label="Breadcrumb" className="mb-4 text-sm text-muted">
+            <Link href="/speaking" className="font-medium hover:text-brand">Speaking</Link>
+            {crumbs.map((c) => (
+              <span key={c.label}>
+                <span className="mx-2" aria-hidden="true">/</span>
+                {c.href ? <Link href={c.href} className="font-medium hover:text-brand">{c.label}</Link> : <span className="text-ink">{c.label}</span>}
+              </span>
+            ))}
+          </nav>
+        )}
+        <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">{title}</h1>
+        <p className="mt-3 max-w-2xl text-lg text-muted">{description}</p>
+      </div>
+    </div>
+  );
+}
