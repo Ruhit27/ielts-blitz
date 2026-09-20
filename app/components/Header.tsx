@@ -1,18 +1,21 @@
 import { Show, SignInButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { difficultyDot, questionTypes } from "../reading/data";
 import WritingIcon from "../writing/WritingIcon";
-import { writingPages } from "../writing/data";
+import { writingTasks } from "../writing/data";
 import { speakingPages } from "../speaking/data";
+import ResourceIcon from "../resources/ResourceIcon";
+import { resourceSections } from "../resources/data";
 import { topics, words } from "../word-coach/data";
 import NavItem from "./NavItem";
+import XpBadge from "./XpBadge";
 
 const navItems = [
   { label: "Reading", href: "/reading", dropdown: true },
   { label: "Listening", href: "/listening" },
   { label: "Writing", href: "/writing", dropdown: true },
   { label: "Speaking", href: "/speaking", dropdown: true },
-  { label: "Exam", href: "/exam", dropdown: true },
   { label: "Resources", href: "/resources", dropdown: true },
   { label: "Dashboard", href: "/dashboard" },
   { label: "League", href: "/league" },
@@ -64,7 +67,7 @@ function ReadingMenu() {
 function WritingMenu() {
   return (
     <ul>
-      {writingPages.map((p) => (
+      {writingTasks.map((p) => (
         <li key={p.id}>
           <Link href={`/writing/${p.id}`} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-medium text-ink transition-colors hover:bg-surface hover:text-brand">
             <span className="text-brand">
@@ -86,6 +89,26 @@ function SpeakingMenu() {
           <Link href={p.href} className="block rounded-lg px-3 py-2.5 transition-colors hover:bg-surface">
             <span className="block whitespace-nowrap text-[15px] font-semibold text-ink">{p.name}</span>
             <span className="block text-xs text-muted">{p.detail}</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ResourcesMenu() {
+  return (
+    <ul>
+      {resourceSections.map((s) => (
+        <li key={s.href}>
+          <Link href={s.href} className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-surface">
+            <span className="shrink-0 text-brand">
+              <ResourceIcon name={s.icon} />
+            </span>
+            <span>
+              <span className="block whitespace-nowrap text-[15px] font-semibold text-ink">{s.name}</span>
+              <span className="block text-xs text-muted">{s.detail}</span>
+            </span>
           </Link>
         </li>
       ))}
@@ -126,30 +149,35 @@ function WordCoachMenu() {
   );
 }
 
+const menus: Record<string, ReactNode> = {
+  Reading: <ReadingMenu />,
+  Writing: <WritingMenu />,
+  Speaking: <SpeakingMenu />,
+  Resources: <ResourcesMenu />,
+  "Word Coach": <WordCoachMenu />,
+};
+
 export default function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-white/90 backdrop-blur">
-      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-[76px] max-w-[90rem] items-center justify-between gap-8 px-4 sm:px-6 lg:px-8">
         <Logo />
 
-        <nav aria-label="Main" className="hidden min-w-0 items-center xl:flex 2xl:gap-1">
+        <nav aria-label="Main" className="hidden min-w-0 items-center gap-0.5 xl:flex 2xl:gap-1">
           {navItems.map((item) => (
             <NavItem
               key={item.label}
               label={item.label}
               href={item.href}
               dropdown={item.dropdown}
-              panelWidth={item.label === "Reading" ? "w-[36rem]" : item.label === "Word Coach" ? "w-[30rem]" : item.label === "Speaking" ? "w-80" : "w-72"}
+              panelWidth={item.label === "Reading" ? "w-[36rem]" : item.label === "Word Coach" ? "w-[30rem]" : item.label === "Speaking" || item.label === "Resources" ? "w-80" : "w-72"}
             >
-              {item.label === "Reading" && <ReadingMenu />}
-              {item.label === "Writing" && <WritingMenu />}
-              {item.label === "Speaking" && <SpeakingMenu />}
-              {item.label === "Word Coach" && <WordCoachMenu />}
+              {menus[item.label]}
             </NavItem>
           ))}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-4">
           <Show when="signed-out">
             <SignInButton>
               <button
@@ -161,6 +189,7 @@ export default function Header() {
             </SignInButton>
           </Show>
           <Show when="signed-in">
+            <XpBadge />
             <UserButton />
           </Show>
         </div>

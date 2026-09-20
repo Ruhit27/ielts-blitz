@@ -47,10 +47,10 @@ export function weeklyPlan(pace: Pace, gap: number): PlanItem[] {
   return [
     { day: "Mon", title: "Reading drills", detail: "Two passages on your weakest question type", minutes: m, href: "/reading" },
     { day: "Tue", title: "Word Coach", detail: "Clear today's due words, then learn new ones", minutes: Math.round(m / 2), href: "/word-coach/practice" },
-    { day: "Wed", title: "Writing Task 2", detail: "Plan, write and check one essay", minutes: m, href: "/writing/checker" },
-    { day: "Thu", title: "Reading drills", detail: "Timed set: True/False/Not Given and headings", minutes: m, href: "/reading" },
-    { day: "Fri", title: heavyWriting ? "Band 8 trainer" : "Sample answers", detail: heavyWriting ? "Upgrade weak sentences to higher-band ones" : "Study a high-band model and note its patterns", minutes: Math.round(m * 0.75), href: heavyWriting ? "/writing/band-8-trainer" : "/writing/sample-answers" },
-    { day: "Sat", title: "Mock test", detail: "Full timed writing mock, then review marks", minutes: m + 20, href: "/writing/mock-test" },
-    { day: "Sun", title: "Review", detail: "Re-drill mistakes and revisit your history", minutes: Math.round(m / 2), href: "/writing/history" },
+    { day: "Wed", title: "Writing Task 2", detail: "Plan and write one essay, then compare it with a model", minutes: m, href: "/writing/task-2" },
+    { day: "Thu", title: "Listening practice", detail: "Play a drill, then check your answers and read the transcript", minutes: m, href: "/listening" },
+    { day: "Fri", title: "Writing Task 1", detail: heavyWriting ? "Study a model report and note its overview and data language" : "Write one report from a chart, table or process", minutes: Math.round(m * 0.75), href: "/writing/task-1" },
+    { day: "Sat", title: "Timed writing", detail: "Task 1 in 20 minutes, then Task 2 in 40", minutes: m + 20, href: "/writing/task-2" },
+    { day: "Sun", title: "Review", detail: "Re-drill weak words and reread your model answers", minutes: Math.round(m / 2), href: "/word-coach/progress" },
   ];
 }

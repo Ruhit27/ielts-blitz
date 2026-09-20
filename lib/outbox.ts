@@ -4,6 +4,7 @@ import { getUser, scoped } from "@/lib/user-scope";
 type Op = { method: "POST" | "PUT" | "DELETE"; url: string; body?: unknown };
 
 const KEY = "ielts-outbox";
+export const XP_EVENT = "xp-refresh";
 let flushing = false;
 
 function read(): Op[] {
@@ -45,6 +46,8 @@ export async function flush() {
       if (res.status >= 500 || res.status === 429 || res.status === 401) break;
       // Anything else (success, or a rejection that retrying can't fix) is done with.
       save(read().slice(1));
+      // Finished tasks may have earned XP; let the badge re-read it.
+      if (res.ok && op.method === "POST" && op.url === "/api/activity") window.dispatchEvent(new Event(XP_EVENT));
     }
   } finally {
     flushing = false;

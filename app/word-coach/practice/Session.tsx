@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { plain, topicById, words as allWords, type TopicId } from "../data";
-import { isDue, parse, readRaw, recordAnswer } from "../progress-store";
+import { enqueue } from "@/lib/outbox";
+import { isDue, parse, readRaw, recordAnswer, today } from "../progress-store";
 import { buildSession, modeInfo, type Mode, type Question } from "../session";
 import { useProgress } from "../useProgress";
 import WordCard from "../WordCard";
@@ -47,10 +48,25 @@ export default function Session({ topic, mode, limit }: { topic: TopicId | "all"
   );
 
   const next = useCallback(() => {
+    if (questions && index + 1 >= questions.length && results.length > 0) {
+      enqueue({
+        method: "POST",
+        url: "/api/activity",
+        body: {
+          kind: "words",
+          date: today(),
+          id: crypto.randomUUID(),
+          title: "Word Coach session",
+          detail: `${results.length} words`,
+          correct: results.filter((r) => r.correct).length,
+          total: results.length,
+        },
+      });
+    }
     setPicked(null);
     setTyped("");
     setIndex((i) => i + 1);
-  }, []);
+  }, [questions, index, results]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
