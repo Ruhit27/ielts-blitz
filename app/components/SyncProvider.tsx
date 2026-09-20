@@ -5,7 +5,6 @@ import { useEffect } from "react";
 import { flush } from "@/lib/outbox";
 import { setUser } from "@/lib/user-scope";
 import { hydrate as hydrateWords, notify as notifyWords } from "../word-coach/progress-store";
-import { hydrate as hydrateWriting, notify as notifyWriting } from "../writing/history-store";
 
 /** Ties browser-side data to the signed-in user and keeps it in step with the database. */
 export default function SyncProvider({ children }: { children: React.ReactNode }) {
@@ -15,14 +14,13 @@ export default function SyncProvider({ children }: { children: React.ReactNode }
     if (!isLoaded) return;
     setUser(userId ?? null);
     notifyWords();
-    notifyWriting();
     if (!userId) return;
 
     let cancelled = false;
     (async () => {
       await flush(); // push anything made offline before reading the server's copy
       if (cancelled) return;
-      await Promise.all([hydrateWords(), hydrateWriting()]);
+      await hydrateWords();
     })();
 
     const retry = () => void flush();

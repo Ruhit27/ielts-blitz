@@ -19,6 +19,23 @@ const paceCopy: Record<Pace, { tone: string; text: (gap: string, days: number) =
   intense: { tone: "border-red-200 bg-red-50 text-brand", text: (g, d) => `${g} bands to go with only ${d} days left. Time to dig in.` },
 };
 
+const kindStyle = {
+  reading: { bg: "bg-reading", letter: "R" },
+  listening: { bg: "bg-gold", letter: "L" },
+  writing: { bg: "bg-writing", letter: "W" },
+  words: { bg: "bg-listening", letter: "V" },
+} as const;
+
+function ago(iso: string) {
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs} h ago`;
+  const days = Math.round(hrs / 24);
+  return days === 1 ? "yesterday" : `${days} days ago`;
+}
+
 export default async function DashboardPage() {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
@@ -32,12 +49,12 @@ export default async function DashboardPage() {
   const gap = profile.goalBand - profile.currentBand;
   const { pace } = paceOf(gap, days);
   const copy = paceCopy[pace];
-  const plan = weeklyPlan(pace, gap);
+  const today = weeklyPlan(pace, gap)[(new Date().getDay() + 6) % 7];
   const minutes = dailyMinutes(pace);
 
   // Track spans 4–9 like the design; clamp the marker inside it.
   const pos = (b: number) => `${(Math.min(9, Math.max(4, b)) - 4) / 5 * 100}%`;
-  const todayIdx = (new Date().getDay() + 6) % 7;
+  const dailyDone = stats.todayMinutes >= minutes;
 
   return (
     <>
@@ -103,16 +120,34 @@ export default async function DashboardPage() {
             </div>
           </section>
 
-          {/* Tracked activity */}
-          <section className="grid gap-4 lg:grid-cols-3">
+          {/* Today */}
+          <section className="grid gap-4 lg:grid-cols-5">
             <div className="rounded-2xl border border-line bg-white p-6 lg:col-span-2">
-              <div className="flex items-baseline justify-between">
-                <h2 className="text-lg font-extrabold text-ink">This week</h2>
-                <p className="text-sm text-muted">{stats.weekItems} {stats.weekItems === 1 ? "activity" : "activities"} · {minutes} min/day target</p>
+              <p className="text-xs font-extrabold tracking-[0.18em] text-brand">TODAY</p>
+              <p className="mt-3 text-xl font-extrabold text-ink">{today.title}</p>
+              <p className="mt-1 text-sm text-muted">{today.detail}</p>
+              <div className="mt-5">
+                <div className="flex justify-between text-xs font-semibold text-muted">
+                  <span>{stats.todayMinutes} min done</span>
+                  <span>{minutes} min goal</span>
+                </div>
+                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface">
+                  <div className={`h-full rounded-full ${dailyDone ? "bg-success" : "bg-brand"}`} style={{ width: `${Math.min(100, (stats.todayMinutes / minutes) * 100)}%` }} />
+                </div>
               </div>
-              <div className="mt-6 flex h-32 items-end gap-3" role="img" aria-label={`Study minutes per day: ${stats.week.map((d) => `${d.label} ${d.minutes}`).join(", ")}`}>
+              <Link href={today.href} className="mt-5 inline-block rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-hover">
+                {dailyDone ? "Keep going" : "Start"} →
+              </Link>
+            </div>
+
+            <div className="rounded-2xl border border-line bg-white p-6 lg:col-span-3">
+              <div className="flex items-baseline justify-between">
+                <p className="text-xs font-extrabold tracking-[0.18em] text-brand">THIS WEEK</p>
+                <p className="text-sm font-bold text-ink">{stats.streak > 0 ? `${stats.streak}-day streak` : "No streak yet"}</p>
+              </div>
+              <div className="mt-5 flex h-28 items-end gap-3" role="img" aria-label={`Study minutes per day: ${stats.week.map((d) => `${d.label} ${d.minutes}`).join(", ")}`}>
                 {stats.week.map((d) => {
-                  const h = Math.min(100, (d.minutes / Math.max(minutes, 1)) * 100);
+                  const h = Math.min(100, (d.minutes / minutes) * 100);
                   return (
                     <div key={d.date} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
                       <div className="flex w-full flex-1 items-end rounded-lg bg-surface">
@@ -124,46 +159,40 @@ export default async function DashboardPage() {
                 })}
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { label: "Day streak", value: String(stats.streak), sub: stats.streak > 0 ? "Keep it going" : "Practise today" },
-                { label: "Words mastered", value: String(stats.mastered), sub: `${stats.started} of ${stats.totalWords} started` },
-                { label: "Due for review", value: String(stats.due), sub: stats.accuracy ? `${stats.accuracy}% accuracy` : "Word Coach" },
-                { label: "Essays checked", value: String(stats.essays), sub: `${stats.readingSets} reading sets` },
-              ].map((s) => (
-                <div key={s.label} className="rounded-2xl border border-line bg-white p-4">
-                  <p className="text-[11px] font-extrabold tracking-[0.12em] text-muted">{s.label.toUpperCase()}</p>
-                  <p className="mt-1.5 text-2xl font-extrabold text-ink">{s.value}</p>
-                  <p className="mt-0.5 text-xs text-muted">{s.sub}</p>
-                </div>
-              ))}
-            </div>
           </section>
 
-          {/* Weekly plan */}
-          <section className="rounded-3xl border border-line bg-white p-6 sm:p-8">
+          {/* Recent activity */}
+          <section className="rounded-2xl border border-line bg-white p-6">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="text-xl font-extrabold text-ink">Your weekly plan</h2>
-              <p className="text-sm text-muted">Built for a {profile.currentBand.toFixed(1)} → {profile.goalBand.toFixed(1)} goal in {profile.timeframeMonths} month{profile.timeframeMonths === 1 ? "" : "s"}</p>
+              <h2 className="text-lg font-extrabold text-ink">Recent activity</h2>
+              <p className="text-sm text-muted">
+                {stats.totals.reading} reading · {stats.totals.listening} listening · {stats.totals.wordSessions} word sessions · {stats.totals.mastered} words mastered
+              </p>
             </div>
-            <ul className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {plan.map((p, i) => (
-                <li key={p.day}>
-                  <Link
-                    href={p.href}
-                    className={`block h-full rounded-2xl border p-4 transition-colors hover:border-brand ${i === todayIdx ? "border-brand bg-red-50/50" : "border-line"}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-extrabold tracking-[0.14em] text-brand">{p.day.toUpperCase()}{i === todayIdx && " · TODAY"}</span>
-                      <span className="text-xs font-semibold text-muted">{p.minutes} min</span>
+            {stats.recent.length === 0 ? (
+              <p className="mt-4 text-sm text-muted">
+                Nothing yet. Finish a <Link href="/reading" className="font-semibold text-brand">reading set</Link>, a <Link href="/listening" className="font-semibold text-brand">listening drill</Link> or a <Link href="/word-coach/practice" className="font-semibold text-brand">word session</Link> and it will show up here.
+              </p>
+            ) : (
+              <ul className="mt-4 divide-y divide-line">
+                {stats.recent.map((e) => (
+                  <li key={e.id} className="flex items-center gap-4 py-3">
+                    <span className={`grid size-9 shrink-0 place-items-center rounded-full text-xs font-extrabold text-white ${kindStyle[e.kind].bg}`} aria-hidden="true">{kindStyle[e.kind].letter}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-bold text-ink">{e.title}</p>
+                      <p className="truncate text-sm text-muted">{e.detail}</p>
                     </div>
-                    <p className="mt-2 font-bold text-ink">{p.title}</p>
-                    <p className="mt-1 text-sm text-muted">{p.detail}</p>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+                    {!!e.xp && <span className="shrink-0 rounded-full bg-gold/20 px-2.5 py-0.5 text-xs font-bold text-amber-800">+{e.xp} XP</span>}
+                    {e.score && (
+                      <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${e.score.correct / e.score.total >= 0.7 ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
+                        {e.score.correct}/{e.score.total}
+                      </span>
+                    )}
+                    <time dateTime={e.at} className="w-20 shrink-0 text-right text-xs text-muted">{ago(e.at)}</time>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         </div>
       </main>

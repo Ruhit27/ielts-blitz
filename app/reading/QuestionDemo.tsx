@@ -9,13 +9,25 @@ function isCorrect(user: string | undefined, answer: string[]) {
   return answer.some((a) => a.toLowerCase() === value);
 }
 
-function recordReading() {
+function recordCompletion(kind: "reading" | "listening", title: string, correct: number, total: number) {
   const d = new Date();
   const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  enqueue({ method: "POST", url: "/api/activity", body: { kind: "reading", date } });
+  enqueue({ method: "POST", url: "/api/activity", body: { kind, date, id: crypto.randomUUID(), title, detail: kind === "listening" ? "Listening practice" : "Reading practice", correct, total } });
 }
 
-export default function QuestionDemo({ type }: { type: QuestionType }) {
+export default function QuestionDemo({
+  type,
+  kind = "reading",
+  before,
+  after,
+}: {
+  type: QuestionType;
+  kind?: "reading" | "listening";
+  /** Shown under the instruction, e.g. an audio player. */
+  before?: React.ReactNode;
+  /** Shown below the questions once they've been checked. */
+  after?: (checked: boolean) => React.ReactNode;
+}) {
   const { demo } = type;
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [checked, setChecked] = useState(false);
@@ -36,6 +48,8 @@ export default function QuestionDemo({ type }: { type: QuestionType }) {
         </span>
       </div>
       <p className="mt-3 rounded-xl bg-brand/5 p-4 text-sm font-medium text-ink">{demo.instruction}</p>
+
+      {before}
 
       {demo.showPassage && (
         <details open className="mt-4 rounded-xl border border-line">
@@ -93,8 +107,9 @@ export default function QuestionDemo({ type }: { type: QuestionType }) {
         <button
           type="button"
           onClick={() => {
+            // Only the first check of an answer set counts, so re-clicking doesn't pad the log.
+            if (!checked) recordCompletion(kind, type.name, score, demo.questions.length);
             setChecked(true);
-            recordReading();
           }}
           className="h-11 rounded-xl bg-brand px-6 text-sm font-semibold text-white transition-colors hover:bg-brand-hover"
         >
@@ -116,6 +131,7 @@ export default function QuestionDemo({ type }: { type: QuestionType }) {
           </span>
         )}
       </div>
+      {after?.(checked)}
     </div>
   );
 }

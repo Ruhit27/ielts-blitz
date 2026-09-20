@@ -33,9 +33,9 @@ export default function NavItem({
       <Link
         href={href}
         aria-current={active ? "page" : undefined}
-        className={`relative flex items-center gap-1 whitespace-nowrap rounded-lg px-2 py-2 text-[15px] font-medium transition-colors hover:text-brand 2xl:px-3 ${
+        className={`relative flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-medium transition-colors hover:text-brand 2xl:px-3.5 2xl:text-[15px] ${
           active
-            ? "text-brand after:absolute after:inset-x-2 after:-bottom-[15px] 2xl:after:inset-x-3 after:h-0.5 after:rounded-full after:bg-brand"
+            ? "text-brand after:absolute after:inset-x-2.5 after:-bottom-[18px] 2xl:after:inset-x-3.5 after:h-0.5 after:rounded-full after:bg-brand"
             : "text-muted"
         }`}
       >
